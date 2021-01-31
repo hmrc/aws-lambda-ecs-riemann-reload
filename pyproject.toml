@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "telemetry-ecs-riemann-reload-lambda"
+version = "0.1.0"
+description = "An AWS Lambda that will re-deploy the Riemann consumer or producer services running in ECS, when triggered by an SNS notification"
+authors = ["Vítor Brandão <109226+vitorbrandao@users.noreply.github.com>"]
+maintainers = ["Team Telemetry"]
+license = "Apache 2.0"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+boto3 = "^1.16.61"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+pytest-cov = "^2.11.1"
+moto = "^1.3.16"
+aws-lambda-context = "^1.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

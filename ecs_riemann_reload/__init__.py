@@ -1,9 +1,18 @@
 import boto3
 import logging
+import os
 
-ECS_CLUSTER_NAME = "telemetry"
-LAMBDA_NAME = "ecs-riemann-reload"
-RIEMANN_CONSUMER_ECS_SERVICE_NAME = "riemann-consumer"
+
+def get_ecs_cluster_name():
+    return os.environ.get("ecs_cluster_name", "telemetry")
+
+
+def get_lambda_name():
+    os.environ.get("lambda_name", "ecs-riemann-reload")
+
+
+def get_riemann_consumer_ecs_service_name():
+    return os.environ.get("riemann_consumer_ecs_service_name", "riemann-consumer")
 
 
 def create_logger(level=logging.INFO):
@@ -24,11 +33,11 @@ def lambda_handler(event, context):
 
     ecs_client = boto3.client("ecs")
 
-    ecs_service_name = RIEMANN_CONSUMER_ECS_SERVICE_NAME
+    ecs_service_name = get_riemann_consumer_ecs_service_name()
     logger.info(f"Requesting a new deployment of the ECS {ecs_service_name} service")
     try:
         response = ecs_client.update_service(
-            cluster=ECS_CLUSTER_NAME, service=ecs_service_name, forceNewDeployment=True
+            cluster=get_ecs_cluster_name(), service=ecs_service_name, forceNewDeployment=True
         )
         logger.info(f"Deployment request completed: \"{response}\"")
 

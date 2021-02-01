@@ -23,17 +23,27 @@ def lambda_handler(event, context):
     logger.info(f"Event received from SNS: \"{event}\"")
 
     ecs_client = boto3.client("ecs")
+
     ecs_service_name = RIEMANN_CONSUMER_ECS_SERVICE_NAME
     logger.info(f"Requesting a new deployment of the ECS {ecs_service_name} service")
-    response = ecs_client.update_service(
-        cluster=ECS_CLUSTER_NAME, service=ecs_service_name, forceNewDeployment=True
-    )
-    logger.info(f"Deployment request completed: \"{response}\"")
+    try:
+        response = ecs_client.update_service(
+            cluster=ECS_CLUSTER_NAME, service=ecs_service_name, forceNewDeployment=True
+        )
+        logger.info(f"Deployment request completed: \"{response}\"")
 
-    return {
-        'serviceName': response['service']['serviceName'],
-        'status': response['service']['status'],
-        'desiredCount': response['service']['desiredCount'],
-        'runningCount': response['service']['runningCount'],
-        'pendingCount': response['service']['pendingCount'],
-    }
+        return {
+            'success': True,
+            'serviceName': response['service']['serviceName'],
+            'status': response['service']['status'],
+            'desiredCount': response['service']['desiredCount'],
+            'runningCount': response['service']['runningCount'],
+            'pendingCount': response['service']['pendingCount'],
+        }
+    except Exception as e:
+        logger.error(f"Deployment action failed: {e}")
+
+        return {
+            'success': False,
+            'errorMessage': str(e)
+        }

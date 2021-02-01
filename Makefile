@@ -27,5 +27,5 @@ publish:
 .PHONY: publish
 
 test:
-	@poetry run pytest --cov=ecs_riemann_reload
+	@poetry run pytest --cov=ecs_riemann_reload --full-trace --verbose
 .PHONY: test

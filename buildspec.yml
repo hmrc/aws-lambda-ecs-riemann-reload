@@ -1,0 +1,14 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+  build:
+    commands:
+      - make test
+      - make package
+artifacts:
+  files:
+    - 'build/artifacts/*.zip'
+    - 'build/artifacts/*.zip.base64sha256'
+

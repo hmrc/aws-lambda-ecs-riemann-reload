@@ -25,6 +25,16 @@ $ make package
 $ aws-profile -p telemetry-internal-base-RoleTelemetryEngineer make publish
 ```
 
+### Environment variables
+
+The following environment variables are processed by the lambda handler and can therefore be set in Terraform to 
+override the defaults provided:
+
+* `ecs_cluster_name` (default: "telemetry")
+* `lambda_name` (default: "ecs-riemann-reload")
+* `log_level` (default: "INFO")
+* `riemann_consumer_ecs_service_name` (default: "riemann-consumer")
+
 ### License
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

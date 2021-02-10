@@ -3,6 +3,11 @@ import logging
 import os
 
 
+def get_log_level():
+    log_level = os.environ.get("log_level", "INFO")
+    return log_level.upper() if isinstance(log_level, str) else log_level
+
+
 def get_ecs_cluster_name():
     return os.environ.get("ecs_cluster_name", "telemetry")
 
@@ -23,7 +28,7 @@ def create_logger(level=logging.INFO):
 
 
 def lambda_handler(event, context):
-    logger = create_logger(logging.DEBUG)
+    logger = create_logger(get_log_level())
     try:
         logger.info(f"Lambda Request ID: {context.aws_request_id}")
     except AttributeError:

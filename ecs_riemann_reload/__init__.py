@@ -34,7 +34,7 @@ def lambda_handler(event, context):
     except AttributeError:
         logger.debug(f"No context object available")
 
-    logger.info(f"Event received from SNS: \"{event}\"")
+    logger.info(f'Event received from SNS: "{event}"')
 
     ecs_client = boto3.client("ecs")
 
@@ -42,22 +42,21 @@ def lambda_handler(event, context):
     logger.info(f"Requesting a new deployment of the ECS {ecs_service_name} service")
     try:
         response = ecs_client.update_service(
-            cluster=get_ecs_cluster_name(), service=ecs_service_name, forceNewDeployment=True
+            cluster=get_ecs_cluster_name(),
+            service=ecs_service_name,
+            forceNewDeployment=True,
         )
-        logger.info(f"Deployment request completed: \"{response}\"")
+        logger.info(f'Deployment request completed: "{response}"')
 
         return {
-            'success': True,
-            'serviceName': response['service']['serviceName'],
-            'status': response['service']['status'],
-            'desiredCount': response['service']['desiredCount'],
-            'runningCount': response['service']['runningCount'],
-            'pendingCount': response['service']['pendingCount'],
+            "success": True,
+            "serviceName": response["service"]["serviceName"],
+            "status": response["service"]["status"],
+            "desiredCount": response["service"]["desiredCount"],
+            "runningCount": response["service"]["runningCount"],
+            "pendingCount": response["service"]["pendingCount"],
         }
     except Exception as e:
         logger.error(f"Deployment action failed: {e}")
 
-        return {
-            'success': False,
-            'errorMessage': str(e)
-        }
+        return {"success": False, "errorMessage": str(e)}

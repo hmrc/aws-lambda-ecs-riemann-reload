@@ -12,3 +12,13 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
         exclude: repository.yaml
+  - repo: https://github.com/python/black
+    rev: 21.5b2
+    hooks:
+      - id: black
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.0
+    hooks:
+      - id: bandit
+        args: [-ll]
+        language_version: python3

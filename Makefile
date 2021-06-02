@@ -18,60 +18,58 @@ clean: ## Clean the environment
 	@poetry run task clean
 .PHONY: clean
 
-check_poetry: check_python
-	@echo '********** Checking for poetry installation *********'
+check_poetry: check_python ## Check Poetry installation
     ifeq ('$(POETRY_OK)','')
 	    $(error package 'poetry' not found!)
     else
 	    @echo Found poetry!
     endif
+.PHONY: check_poetry
 
 check_python: ## Check Python installation
-	@echo '*********** Checking for Python installation ***********'
     ifeq ('$(PYTHON_OK)','')
 	    $(error python interpreter: 'python' not found!)
     else
 	    @echo Found Python
     endif
-	@echo '*********** Checking for Python version ***********'
     ifneq ('$(PYTHON_REQUIRED)','$(PYTHON_VERSION)')
 	    $(error incorrect version of python found: '${PYTHON_VERSION}'. Expected '${PYTHON_REQUIRED}'!)
     else
 	    @echo Found Python ${PYTHON_REQUIRED}
     endif
+.PHONY: check_python
 
 reset: ## Teardown tooling
 	rm $(poetry env info --path) -r
 .PHONY: reset
 
 setup: check_poetry ## Setup virtualenv & dependencies using poetry
-	@echo '**************** Creating virtualenv *******************'
-	@echo 'POETRY_VIRTUALENVS_IN_PROJECT $(POETRY_VIRTUALENVS_IN_PROJECT)'
 	export POETRY_VIRTUALENVS_IN_PROJECT=$(POETRY_VIRTUALENVS_IN_PROJECT)
 	poetry install --no-root
-	@echo '*************** Installation Complete ******************'
+.PHONY: setup
 
-bandit: setup ## Run bandit against environment_builder python code (ignoring low severity)
-	poetry run bandit -ll ./tools/environment_builder/*.py --exclude tools/environment_builder/test_environment_builder.py
+bandit: setup ## Run bandit against python code
+	@poetry run task bandit
+.PHONY: bandit
 
-black: setup ## Run black against environment_builder python code
-	poetry run black ./tools/environment_builder/*.py
+black: setup ## Run black against python code
+	@poetry run task black_reformat
+.PHONY: black
 
-package:
-	@mkdir -p build/deps
-	@poetry export -f requirements.txt --without-hashes -o build/deps/requirements.txt
-	@pip install --target build/deps -r build/deps/requirements.txt
-	@mkdir -p build/artifacts
-	@zip -r build/artifacts/${LAMBDA_NAME}.zip ecs_riemann_reload
-	@cd build/deps && zip -r ../artifacts/${LAMBDA_NAME}.zip . && cd -
-	@openssl dgst -sha256 -binary build/artifacts/${LAMBDA_NAME}.zip | openssl enc -base64 > build/artifacts/${LAMBDA_NAME}.zip.base64sha256
+safety: setup ## Run Safety
+	@poetry run task safety
+.PHONY: safety
+
+test: setup ## Run functional and unit tests
+	@poetry run task test
+.PHONY: test
+
+package: setup ## Run a SAM build
+	@poetry run task assemble
 .PHONY: package
 
-publish:
-	@if [ "$$(aws sts get-caller-identity | jq -r .Account)" != "${TELEMETRY_INTERNAL_BASE_ACCOUNT_ID}" ]; then \
-  		echo "Please make sure that you execute this target with a \"telemetry-internal-base\" AWS profile. Exiting."; exit 1; fi
-	aws s3 cp build/artifacts/${LAMBDA_NAME}.zip s3://${BUCKET_NAME}/build-ecs-riemann-reload-lambda/${LAMBDA_NAME}.zip --acl=bucket-owner-full-control
-	aws s3 cp build/artifacts/${LAMBDA_NAME}.zip.base64sha256 s3://${BUCKET_NAME}/build-ecs-riemann-reload-lambda/${LAMBDA_NAME}.zip.base64sha256 --content-type text/plain --acl=bucket-owner-full-control
+publish: setup ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment )
+	@poetry run task publish
 .PHONY: publish
 
 unittest: ## Run unit tests

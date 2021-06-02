@@ -28,7 +28,7 @@ version-incrementor = "^0.9.0"
 
 [tool.taskipy.tasks]
 clean = "rm -fr ./build"
-unittest = "pytest tests/unit --cov=ecs_riemann_reload --full-trace --verbose"
+unittest = "PYTHONPATH='src' pytest tests/unit --cov=src --full-trace --verbose"
 start_lambda = "./bin/start-lambda.sh"
 stop_lambda = "./bin/stop-lambda.sh"
 # pre_functest = "task assemble && task start_lambda"
@@ -52,18 +52,18 @@ test = """#!/usr/bin/env bash
               task functest
           fi"""
 
-black_check = "black --check --diff ./ecs_riemann_reload ./tests"
-black_reformat = "black ./ecs_riemann_reload ./tests"
+black_check = "black --check --diff ./src ./tests"
+black_reformat = "black ./src ./tests"
 safety = "safety check"
-bandit = "bandit -r ./ecs_riemann_reload"
+bandit = "bandit -r ./src"
 prepare_release = '''prepare-release &&
                      export VERSION=$(cat .version) &&
                      sed -i "s/^version\\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml'''
 assemble = """#!/usr/bin/env bash
               set -ue
               mkdir -p build &&
-              poetry export --without-hashes -f requirements.txt -o build/requirements.txt &&
-              SAM_CLI_TELEMETRY=0 sam build ${SAM_USE_CONTAINER:=""} -t resources/aws-sam-cli/template.yaml -m build/requirements.txt --region eu-west-2"""
+              poetry export --without-hashes --format requirements.txt --output build/requirements.txt &&
+              SAM_CLI_TELEMETRY=0 sam build ${SAM_USE_CONTAINER:=""} --template-file resources/aws-sam-cli/template.yaml --manifest build/requirements.txt --region eu-west-2"""
 cut_release = """#!/usr/bin/env bash
                  set -ue
                  cut-release"""
@@ -82,8 +82,8 @@ publish_s3 = """#!/usr/bin/env bash
 
                 SAM_CLI_TELEMETRY=0 sam package ${SAM_USE_CONTAINER:=""} --region eu-west-2 \\
                     --s3-bucket mdtp-lambda-functions-${MDTP_ENVIRONMENT} \\
-                    --s3-prefix aws-lambda-app-mesh-config-provider \\
-                    --output-template-file=$(pwd)/build/app-mesh-config-provider-cf-template.yaml"""
+                    --s3-prefix aws-lambda-ecs-riemann-reload \\
+                    --output-template-file=$(pwd)/build/ecs-riemann-reload-cf-template.yaml"""
 publish = """task assemble &&
              task publish_s3 &&
              task rename_s3_file &&
@@ -95,17 +95,17 @@ rename_s3_file = """#!/usr/bin/env bash
                         exit 1
                     fi
                     export VERSION=$(cat .version)
-                    export S3_BUCKET=$(grep S3Bucket build/app-mesh-config-provider-cf-template.yaml \\
+                    export S3_BUCKET=$(grep S3Bucket build/ecs-riemann-reload-cf-template.yaml \\
                         | cut -d : -f 2  \\
                         | sed 's/\\s*//g') &&
-                    export S3_KEY_FOLDER=$(grep S3Key build/app-mesh-config-provider-cf-template.yaml \\
+                    export S3_KEY_FOLDER=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
                         | cut -d : -f 2  \\
                         | cut -d / -f 1 | sed 's/\\s*//g') &&
-                    export S3_KEY_FILENAME=$(grep S3Key build/app-mesh-config-provider-cf-template.yaml \\
+                    export S3_KEY_FILENAME=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
                         | cut -d : -f 2  \\
                         | cut -d / -f 2 | sed 's/\\s*//g') &&
                     aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \\
-                              s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-app-mesh-config-provider.${VERSION}.zip \\
+                              s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \\
                               --acl=bucket-owner-full-control"""
 publish_checksum_file = """#!/usr/bin/env bash
                             set -ue
@@ -114,13 +114,13 @@ publish_checksum_file = """#!/usr/bin/env bash
                                 exit 1
                             fi
                             export VERSION=$(cat .version)
-                            export S3_BUCKET=$(grep S3Bucket build/app-mesh-config-provider-cf-template.yaml \\
+                            export S3_BUCKET=$(grep S3Bucket build/ecs-riemann-reload-cf-template.yaml \\
                                 | cut -d : -f 2  \\
                                 | sed 's/\\s*//g') &&
-                            export S3_KEY_FOLDER=$(grep S3Key build/app-mesh-config-provider-cf-template.yaml \\
+                            export S3_KEY_FOLDER=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
                                 | cut -d : -f 2  \\
                                 | cut -d / -f 1 | sed 's/\\s*//g') &&
-                            export FILE_NAME="aws-lambda-app-mesh-config-provider.${VERSION}.zip" &&
+                            export FILE_NAME="aws-lambda-ecs-riemann-reload.${VERSION}.zip" &&
                             export HASH_FILE_NAME="${FILE_NAME}.base64sha256" &&
                             aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${FILE_NAME} build/${FILE_NAME} &&
                             echo -n "build/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 > build/${HASH_FILE_NAME} &&

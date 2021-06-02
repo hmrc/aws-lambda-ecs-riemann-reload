@@ -2,7 +2,7 @@ import pytest
 from aws_lambda_context import LambdaContext
 from moto import mock_ecs
 
-from ecs_riemann_reload import *
+from ecs_riemann_reload.handler import *
 
 
 def test_it_creates_a_logger_with_a_custom_log_level():

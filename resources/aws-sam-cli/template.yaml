@@ -1,0 +1,11 @@
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  AppMeshConfigProvider:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code: ../../src
+      FunctionName: ecs-riemann-reload
+      Handler: handler.get_service_app_mesh_config
+      Role: EcsRiemannReloadRole
+      Runtime: python3.8

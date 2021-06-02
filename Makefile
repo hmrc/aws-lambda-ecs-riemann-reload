@@ -74,6 +74,6 @@ publish:
 	aws s3 cp build/artifacts/${LAMBDA_NAME}.zip.base64sha256 s3://${BUCKET_NAME}/build-ecs-riemann-reload-lambda/${LAMBDA_NAME}.zip.base64sha256 --content-type text/plain --acl=bucket-owner-full-control
 .PHONY: publish
 
-test:
-	@poetry run pytest --cov=ecs_riemann_reload --full-trace --verbose
-.PHONY: test
+unittest: ## Run unit tests
+	@poetry run task unittest
+.PHONY: unittest

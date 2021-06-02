@@ -19,6 +19,10 @@ moto = "^2.0.8"
 pytest = "^6.2.4"
 pytest-cov = "^2.12.1"
 safety = "^1.10.3"
+taskipy = "^1.4.0"
+
+[tool.taskipy.tasks]
+clean = "rm -fr ./build"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -27,7 +27,7 @@ $ aws-profile -p telemetry-internal-base-RoleTelemetryEngineer make publish
 
 ### Environment variables
 
-The following environment variables are processed by the lambda handler and can therefore be set in Terraform to 
+The following environment variables are processed by the lambda handler and can therefore be set in Terraform to
 override the defaults provided:
 
 * `ecs_cluster_name` (default: "telemetry")

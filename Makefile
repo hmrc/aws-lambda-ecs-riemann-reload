@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 POETRY_OK := $(shell type -P poetry)
+POETRY_REQUIRED := $(shell cat .poetry-version)
 PYTHON_OK := $(shell type -P python)
 PYTHON_VERSION ?= $(shell python -V | cut -d' ' -f2)
 PYTHON_REQUIRED := $(shell cat .python-version)
@@ -22,7 +23,7 @@ check_poetry: check_python ## Check Poetry installation
     ifeq ('$(POETRY_OK)','')
 	    $(error package 'poetry' not found!)
     else
-	    @echo Found poetry!
+	    @echo Found Poetry ${POETRY_REQUIRED}
     endif
 .PHONY: check_poetry
 
@@ -44,8 +45,8 @@ reset: ## Teardown tooling
 .PHONY: reset
 
 setup: check_poetry ## Setup virtualenv & dependencies using poetry
-	export POETRY_VIRTUALENVS_IN_PROJECT=$(POETRY_VIRTUALENVS_IN_PROJECT) && poetry run pip install --upgrade pip
-	poetry install --no-root
+	@export POETRY_VIRTUALENVS_IN_PROJECT=$(POETRY_VIRTUALENVS_IN_PROJECT) && poetry run pip install --upgrade pip
+	@poetry install --no-root
 .PHONY: setup
 
 bandit: setup ## Run bandit against python code

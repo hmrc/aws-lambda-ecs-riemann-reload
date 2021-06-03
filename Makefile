@@ -1,5 +1,6 @@
 SHELL := /usr/bin/env bash
 POETRY_OK := $(shell type -P poetry)
+POETRY_PATH := $(shell poetry env info --path)
 POETRY_REQUIRED := $(shell cat .poetry-version)
 PYTHON_OK := $(shell type -P python)
 PYTHON_VERSION ?= $(shell python -V | cut -d' ' -f2)
@@ -41,7 +42,7 @@ check_python: ## Check Python installation
 .PHONY: check_python
 
 reset: ## Teardown tooling
-	rm $(poetry env info --path) -r
+	rm $(POETRY_PATH) -r
 .PHONY: reset
 
 setup: check_poetry ## Setup virtualenv & dependencies using poetry

@@ -17,4 +17,4 @@ artifacts:
   files:
     - 'build/artifacts/*.zip'
     - 'build/artifacts/*.zip.base64sha256'
-
+  discard-paths: yes

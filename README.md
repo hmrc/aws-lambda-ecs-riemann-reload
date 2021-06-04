@@ -23,7 +23,6 @@ make package
 ```
 
 ### Environment variables
-
 The following environment variables are processed by the lambda handler and can therefore be set in Terraform to
 override the defaults provided:
 

@@ -45,6 +45,9 @@ node {
             SKIP_FUNCTEST=true ./bin/run-in-docker.sh poetry run task verify""")
     }
     stage('Determine Artefact Version') {
+      when {
+        branch 'main'
+      }
       sh('''#!/usr/bin/env bash
             set -ue
             GIT_BRANCH="$(cat .git/_branch)" \
@@ -53,6 +56,9 @@ node {
             ./bin/run-in-docker.sh poetry run task prepare_release''')
     }
     stage('Build Artefact') {
+      when {
+        branch 'main'
+      }
       sh('''#!/usr/bin/env bash
             set -ue
             SAM_USE_CONTAINER="" \
@@ -66,6 +72,9 @@ node {
                      "externaltest",
                      "production"].each { environmentName ->
       stage("Publish Artefact to ${environmentName} S3 Artefact Bucket") {
+        when {
+          branch 'main'
+        }
         sh("""#!/usr/bin/env bash
               set -ue
               GIT_BRANCH="\$(cat .git/_branch)" \
@@ -78,9 +87,12 @@ node {
     }
 
     stage('Create and push release tag') {
+      when {
+        branch 'main'
+      }
       sh('''#!/usr/bin/env bash
             set -ue
-            ./bin/run-in-docker.sh poetry run task cut-release''')
+            ./bin/run-in-docker.sh poetry run task cut_release''')
     }
   }
 }

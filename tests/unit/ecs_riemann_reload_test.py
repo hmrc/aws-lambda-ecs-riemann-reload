@@ -74,7 +74,7 @@ def aws_credentials():
 @pytest.fixture(scope="function")
 def ecs(aws_credentials):
     with mock_ecs():
-        yield boto3.client("ecs")
+        yield boto3.client("ecs", region_name="eu-west-1")
 
 
 @pytest.fixture

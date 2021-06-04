@@ -11,7 +11,6 @@ docker run \
   -e GITHUB_API_TOKEN="${GITHUB_API_TOKEN:=null}" \
   -e MDTP_ENVIRONMENT="${MDTP_ENVIRONMENT:=null}" \
   -e GIT_BRANCH="${GIT_BRANCH:=null}" \
-  -e SKIP_FUNCTEST="${SKIP_FUNCTEST:=null}" \
   -e SAM_USE_CONTAINER="${SAM_USE_CONTAINER:=""}" \
   python-build-env \
   "${@}"

@@ -26,7 +26,6 @@ node {
             # Don't set -e as verify will return a non zero exit code in case of vulnerabilities.
             set -u
             SAM_USE_CONTAINER="" \
-            SKIP_FUNCTEST=true \
             ./bin/run-in-docker.sh poetry run task verify""")
     }
   }

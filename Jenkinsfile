@@ -42,7 +42,7 @@ node {
       sh("""#!/usr/bin/env bash
             # Don't set -e as verify will return a non zero exit code in case of vulnerabilities.
             set -u
-            SKIP_FUNCTEST=true ./bin/run-in-docker.sh poetry run task verify""")
+            ./bin/run-in-docker.sh poetry run task verify""")
     }
     if (env.BRANCH_NAME == "main") {
       stage('Determine Artefact Version') {

@@ -16,5 +16,5 @@ phases:
 artifacts:
   files:
     - 'build/artifacts/*.zip'
-    - 'build/artifacts/*.zip.base64sha256'
+    - 'build/artifacts/*.zip.base64sha256.txt'
   discard-paths: yes

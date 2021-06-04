@@ -44,38 +44,31 @@ node {
             set -u
             SKIP_FUNCTEST=true ./bin/run-in-docker.sh poetry run task verify""")
     }
-    stage('Determine Artefact Version') {
-      when {
-        branch 'main'
-      }
-      sh('''#!/usr/bin/env bash
+    if (env.BRANCH_NAME == "main") {
+      stage('Determine Artefact Version') {
+        sh('''#!/usr/bin/env bash
             set -ue
             GIT_BRANCH="$(cat .git/_branch)" \
             GITHUB_API_USER="${GIT_USERNAME}" \
             GITHUB_API_TOKEN="${GIT_PERSONAL_ACCESS_TOKEN}" \
             ./bin/run-in-docker.sh poetry run task prepare_release''')
-    }
-    stage('Build Artefact') {
-      when {
-        branch 'main'
       }
-      sh('''#!/usr/bin/env bash
+
+      stage('Build Artefact') {
+        sh('''#!/usr/bin/env bash
             set -ue
             SAM_USE_CONTAINER="" \
             ./bin/run-in-docker.sh poetry run task assemble''')
-    }
+      }
 
-    publishStages = ["integration",
-                     "development",
-                     "qa",
-                     "staging",
-                     "externaltest",
-                     "production"].each { environmentName ->
-      stage("Publish Artefact to ${environmentName} S3 Artefact Bucket") {
-        when {
-          branch 'main'
-        }
-        sh("""#!/usr/bin/env bash
+      publishStages = ["integration",
+                       "development",
+                       "qa",
+                       "staging",
+                       "externaltest",
+                       "production"].each { environmentName ->
+        stage("Publish Artefact to ${environmentName} S3 Artefact Bucket") {
+          sh("""#!/usr/bin/env bash
               set -ue
               GIT_BRANCH="\$(cat .git/_branch)" \
               GITHUB_API_USER="\${GIT_USERNAME}" \
@@ -83,16 +76,13 @@ node {
               MDTP_ENVIRONMENT=${environmentName} \
               SAM_USE_CONTAINER="" \
               ./bin/run-in-docker.sh poetry run task publish""")
+        }
       }
-    }
-
-    stage('Create and push release tag') {
-      when {
-        branch 'main'
-      }
-      sh('''#!/usr/bin/env bash
+      stage('Create and push release tag') {
+        sh('''#!/usr/bin/env bash
             set -ue
             ./bin/run-in-docker.sh poetry run task cut_release''')
+      }
     }
   }
 }

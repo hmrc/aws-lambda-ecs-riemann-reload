@@ -34,25 +34,12 @@ start_lambda = "./bin/start-lambda.sh"
 stop_lambda = "./bin/stop-lambda.sh"
 pre_functest = "task assemble && task start_lambda"
 functest = """#!/usr/bin/env bash
-           set -ue
-           PYTHONPATH='.' poetry run pytest tests/functional
-           """
+              set -ue
+              PYTHONPATH='.' poetry run pytest tests/functional"""
 post_functest = "task stop_lambda"
 test = """#!/usr/bin/env bash
           set -e
-          task unittest
-
-          # It is not yet possible to run functional tests on Jenkins
-          # due to a docker-in-docker constraint. So we make it possible
-          # to skip their execution via the specification of the SKIP_FUNCTEST
-          # environment variable.
-          if [ "${SKIP_FUNCTEST:-false}" = "true" ]
-          then
-              echo "Skipping functional tests due to SKIP_FUNCTEST=true environment variable setting."
-          else
-              task functest
-          fi"""
-
+          task unittest"""
 black_check = "black --check --diff ./src ./tests"
 black_reformat = "black ./src ./tests"
 safety = "safety check"

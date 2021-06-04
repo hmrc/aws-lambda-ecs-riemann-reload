@@ -15,6 +15,15 @@ Please check the [telemetry-terraform](https://github.com/hmrc/telemetry-terrafo
 ## Quick start
 
 ```shell
+# Install correct version of Python
+pyenv install $(cat .python-version)
+
+# Optional set up environment variables
+export POETRY_VIRTUALENVS_IN_PROJECT=true
+export PYTHONPATH=/home/james/hmrcDev/aws-lambda-ecs-riemann-reload
+export SKIP_FUNCTEST=true
+export MDTP_ENVIRONMENT=integration
+
 # Run tests:
 make test
 

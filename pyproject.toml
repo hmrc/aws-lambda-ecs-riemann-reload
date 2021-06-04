@@ -109,7 +109,7 @@ publish_checksum_file = """#!/usr/bin/env bash
                                 | cut -d : -f 2  \\
                                 | cut -d / -f 1 | sed 's/\\s*//g') &&
                             export FILE_NAME="aws-lambda-ecs-riemann-reload.${VERSION}.zip" &&
-                            export HASH_FILE_NAME="${FILE_NAME}.base64sha256" &&
+                            export HASH_FILE_NAME="${FILE_NAME}.base64sha256.txt" &&
                             aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${FILE_NAME} build/${FILE_NAME} &&
                             echo -n "build/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 > build/${HASH_FILE_NAME} &&
                             aws s3 cp --content-type text/plain build/${HASH_FILE_NAME} s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${HASH_FILE_NAME} --acl=bucket-owner-full-control"""

@@ -5,24 +5,16 @@ from moto import mock_ecs
 from src.handler import *
 
 
-def test_it_creates_a_logger_with_a_custom_log_level():
-    logger = create_logger(logging.CRITICAL)
-    assert isinstance(logger, logging.Logger)
-    assert logging.CRITICAL == logger.level
-
-
 @mock_ecs
-def test_that_the_lambda_handler_succeeds_with_context(sns_event):
+def test_that_the_lambda_handler_succeeds_with_context(ecs, sns_event):
     lambda_context = LambdaContext()
     lambda_context.function_name = "lambda_handler"
     lambda_context.aws_request_id = "abc-123"
 
-    ecs_client = boto3.client("ecs")
-
-    ecs_cluster_name = get_ecs_cluster_name()
-    riemann_consumer_ecs_service_name = get_riemann_consumer_ecs_service_name()
-    ecs_client.create_cluster(clusterName=ecs_cluster_name)
-    ecs_client.create_service(
+    ecs_cluster_name = os.environ.get("ecs_cluster_name", "telemetry")
+    riemann_consumer_ecs_service_name = "riemann-consumer"
+    ecs.create_cluster(clusterName=ecs_cluster_name)
+    ecs.create_service(
         cluster=ecs_cluster_name, serviceName=riemann_consumer_ecs_service_name
     )
 
@@ -34,13 +26,11 @@ def test_that_the_lambda_handler_succeeds_with_context(sns_event):
 
 
 @mock_ecs
-def test_that_the_lambda_handler_succeeds_without_context(sns_event):
-    ecs_client = boto3.client("ecs")
-
-    ecs_cluster_name = get_ecs_cluster_name()
-    riemann_consumer_ecs_service_name = get_riemann_consumer_ecs_service_name()
-    ecs_client.create_cluster(clusterName=ecs_cluster_name)
-    ecs_client.create_service(
+def test_that_the_lambda_handler_succeeds_without_context(ecs, sns_event):
+    ecs_cluster_name = os.environ.get("ecs_cluster_name", "telemetry")
+    riemann_consumer_ecs_service_name = "riemann-consumer"
+    ecs.create_cluster(clusterName=ecs_cluster_name)
+    ecs.create_service(
         cluster=ecs_cluster_name, serviceName=riemann_consumer_ecs_service_name
     )
 
@@ -52,12 +42,12 @@ def test_that_the_lambda_handler_succeeds_without_context(sns_event):
 
 
 @mock_ecs
-def test_that_the_lambda_handler_fails_when_providing_an_invalid_ecs_service(sns_event):
-    ecs_client = boto3.client("ecs")
-
-    ecs_cluster_name = get_ecs_cluster_name()
-    ecs_client.create_cluster(clusterName=ecs_cluster_name)
-    ecs_client.create_service(
+def test_that_the_lambda_handler_fails_when_providing_an_invalid_ecs_service(
+    ecs, sns_event
+):
+    ecs_cluster_name = os.environ.get("ecs_cluster_name", "telemetry")
+    ecs.create_cluster(clusterName=ecs_cluster_name)
+    ecs.create_service(
         cluster=ecs_cluster_name, serviceName="not-a-riemann-service-name"
     )
 
@@ -70,7 +60,21 @@ def test_that_the_lambda_handler_fails_when_providing_an_invalid_ecs_service(sns
 @pytest.fixture(autouse=True)
 def initialise_environment_variables():
     os.environ["ecs_cluster_name"] = "test-cluster"
-    assert get_ecs_cluster_name() == "test-cluster"
+
+
+@pytest.fixture(scope="function")
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
+
+
+@pytest.fixture(scope="function")
+def ecs(aws_credentials):
+    with mock_ecs():
+        yield boto3.client("ecs")
 
 
 @pytest.fixture

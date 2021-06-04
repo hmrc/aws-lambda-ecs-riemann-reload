@@ -50,7 +50,7 @@ node {
             GIT_BRANCH="$(cat .git/_branch)" \
             GITHUB_API_USER="${GIT_USERNAME}" \
             GITHUB_API_TOKEN="${GIT_PERSONAL_ACCESS_TOKEN}" \
-            ./bin/run-in-docker.sh poetry run task prepare-release''')
+            ./bin/run-in-docker.sh poetry run task prepare_release''')
     }
     stage('Build Artefact') {
       sh('''#!/usr/bin/env bash

@@ -29,7 +29,7 @@ version-incrementor = "^0.9.0"
 
 [tool.taskipy.tasks]
 clean = "rm -fr ./build"
-unittest = "PYTHONPATH='src' pytest tests/unit --cov=src --full-trace --verbose"
+unittest = "PYTHONPATH='src' pytest tests/unit --cov=src"
 start_lambda = "./bin/start-lambda.sh"
 stop_lambda = "./bin/stop-lambda.sh"
 pre_functest = "task assemble && task start_lambda"

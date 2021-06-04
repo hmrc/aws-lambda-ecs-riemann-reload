@@ -8,7 +8,6 @@ logger = Logger(
 )
 
 
-@logger.inject_lambda_context
 def lambda_handler(event, context):
     try:
         logger.info(f"Lambda Request ID: {context.aws_request_id}")

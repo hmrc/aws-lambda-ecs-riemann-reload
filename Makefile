@@ -1,5 +1,12 @@
 SHELL := /usr/bin/env bash
+POETRY_OK := $(shell type -P poetry)
+POETRY_PATH := $(shell poetry env info --path)
+POETRY_REQUIRED := $(shell cat .poetry-version)
+PYTHON_OK := $(shell type -P python)
+PYTHON_VERSION ?= $(shell python -V | cut -d' ' -f2)
+PYTHON_REQUIRED := $(shell cat .python-version)
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
+POETRY_VIRTUALENVS_IN_PROJECT ?= true
 
 TELEMETRY_INTERNAL_BASE_ACCOUNT_ID := 634456480543
 BUCKET_NAME := telemetry-lambda-artifacts-internal-base
@@ -9,23 +16,64 @@ help: ## The help text you're reading
 	@grep --no-filename -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 .PHONY: help
 
-package:
-	@mkdir -p build/deps
-	@poetry export -f requirements.txt --without-hashes -o build/deps/requirements.txt
-	@pip install --target build/deps -r build/deps/requirements.txt
-	@mkdir -p build/artifacts
-	@zip -r build/artifacts/${LAMBDA_NAME}.zip ecs_riemann_reload
-	@cd build/deps && zip -r ../artifacts/${LAMBDA_NAME}.zip . && cd -
-	@openssl dgst -sha256 -binary build/artifacts/${LAMBDA_NAME}.zip | openssl enc -base64 > build/artifacts/${LAMBDA_NAME}.zip.base64sha256
+clean: ## Clean the environment
+	@poetry run task clean
+.PHONY: clean
+
+check_poetry: check_python ## Check Poetry installation
+    ifeq ('$(POETRY_OK)','')
+	    $(error package 'poetry' not found!)
+    else
+	    @echo Found Poetry ${POETRY_REQUIRED}
+    endif
+.PHONY: check_poetry
+
+check_python: ## Check Python installation
+    ifeq ('$(PYTHON_OK)','')
+	    $(error python interpreter: 'python' not found!)
+    else
+	    @echo Found Python
+    endif
+    ifneq ('$(PYTHON_REQUIRED)','$(PYTHON_VERSION)')
+	    $(error incorrect version of python found: '${PYTHON_VERSION}'. Expected '${PYTHON_REQUIRED}'!)
+    else
+	    @echo Found Python ${PYTHON_REQUIRED}
+    endif
+.PHONY: check_python
+
+reset: ## Teardown tooling
+	rm $(POETRY_PATH) -r
+.PHONY: reset
+
+setup: check_poetry ## Setup virtualenv & dependencies using poetry
+	@export POETRY_VIRTUALENVS_IN_PROJECT=$(POETRY_VIRTUALENVS_IN_PROJECT) && poetry run pip install --upgrade pip
+	@poetry install --no-root
+.PHONY: setup
+
+bandit: setup ## Run bandit against python code
+	@poetry run task bandit
+.PHONY: bandit
+
+black: setup ## Run black against python code
+	@poetry run task black_reformat
+.PHONY: black
+
+safety: setup ## Run Safety
+	@poetry run task safety
+.PHONY: safety
+
+test: setup ## Run functional and unit tests
+	@poetry run task test
+.PHONY: test
+
+package: setup ## Run a SAM build
+	@poetry run task assemble
 .PHONY: package
 
-publish:
-	@if [ "$$(aws sts get-caller-identity | jq -r .Account)" != "${TELEMETRY_INTERNAL_BASE_ACCOUNT_ID}" ]; then \
-  		echo "Please make sure that you execute this target with a \"telemetry-internal-base\" AWS profile. Exiting."; exit 1; fi
-	aws s3 cp build/artifacts/${LAMBDA_NAME}.zip s3://${BUCKET_NAME}/build-ecs-riemann-reload-lambda/${LAMBDA_NAME}.zip --acl=bucket-owner-full-control
-	aws s3 cp build/artifacts/${LAMBDA_NAME}.zip.base64sha256 s3://${BUCKET_NAME}/build-ecs-riemann-reload-lambda/${LAMBDA_NAME}.zip.base64sha256 --content-type text/plain --acl=bucket-owner-full-control
+publish: setup ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment )
+	@poetry run task publish
 .PHONY: publish
 
-test:
-	@poetry run pytest --cov=ecs_riemann_reload --full-trace --verbose
-.PHONY: test
+unittest: ## Run unit tests
+	@poetry run task unittest
+.PHONY: unittest

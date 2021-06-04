@@ -1,4 +1,4 @@
-# telemetry-ecs-riemann-reload-lambda
+# aws-lambda-ecs-riemann-reload
 
 [![Brought to you by Telemetry Team](https://img.shields.io/badge/MDTP-Telemetry-40D9C0?style=flat&labelColor=000000&logo=gov.uk)](https://confluence.tools.tax.service.gov.uk/display/TEL/Telemetry)
 
@@ -16,18 +16,14 @@ Please check the [telemetry-terraform](https://github.com/hmrc/telemetry-terrafo
 
 ```shell
 # Run tests:
-$ make test
+make test
 
 # Package the lambda locally:
-$ make package
-
-# Push the package to the lambdas bucket in telemetry-internal-base:
-$ aws-profile -p telemetry-internal-base-RoleTelemetryEngineer make publish
+make package
 ```
 
 ### Environment variables
-
-The following environment variables are processed by the lambda handler and can therefore be set in Terraform to 
+The following environment variables are processed by the lambda handler and can therefore be set in Terraform to
 override the defaults provided:
 
 * `ecs_cluster_name` (default: "telemetry")

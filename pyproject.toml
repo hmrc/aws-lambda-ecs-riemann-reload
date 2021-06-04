@@ -1,20 +1,136 @@
 [tool.poetry]
-name = "telemetry-ecs-riemann-reload-lambda"
+name = "aws-lambda-ecs-riemann-reload"
 version = "0.1.0"
 description = "An AWS Lambda that will re-deploy the Riemann consumer or producer services running in ECS, when triggered by an SNS notification"
 authors = ["Vítor Brandão <109226+vitorbrandao@users.noreply.github.com>"]
 maintainers = ["Team Telemetry"]
 license = "Apache 2.0"
 
+[[tool.poetry.source]]
+name = "artifactory"
+url = "https://artefacts.tax.service.gov.uk/artifactory/api/pypi/pips/simple/"
+
 [tool.poetry.dependencies]
 python = "^3.8"
-boto3 = "^1.16.61"
+boto3 = "^1.17.85"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.2"
-pytest-cov = "^2.11.1"
-moto = "^1.3.16"
 aws-lambda-context = "^1.1.0"
+aws-lambda-powertools = "^1.16.1"
+aws-sam-cli = "^1.6.2"
+bandit = "^1.7.0"
+black = "^21.5b2"
+moto = "^2.0.8"
+pytest = "^6.2.4"
+pytest-cov = "^2.12.1"
+safety = "^1.10.3"
+taskipy = "^1.4.0"
+version-incrementor = "^0.9.0"
+
+[tool.taskipy.tasks]
+clean = "rm -fr ./build"
+unittest = "PYTHONPATH='src' pytest tests/unit --cov=src"
+start_lambda = "./bin/start-lambda.sh"
+stop_lambda = "./bin/stop-lambda.sh"
+pre_functest = "task assemble && task start_lambda"
+functest = """#!/usr/bin/env bash
+           set -ue
+           PYTHONPATH='.' poetry run pytest tests/functional
+           """
+post_functest = "task stop_lambda"
+test = """#!/usr/bin/env bash
+          set -e
+          task unittest
+
+          # It is not yet possible to run functional tests on Jenkins
+          # due to a docker-in-docker constraint. So we make it possible
+          # to skip their execution via the specification of the SKIP_FUNCTEST
+          # environment variable.
+          if [ "${SKIP_FUNCTEST:-false}" = "true" ]
+          then
+              echo "Skipping functional tests due to SKIP_FUNCTEST=true environment variable setting."
+          else
+              task functest
+          fi"""
+
+black_check = "black --check --diff ./src ./tests"
+black_reformat = "black ./src ./tests"
+safety = "safety check"
+bandit = "bandit -r ./src"
+prepare_release = '''prepare-release &&
+                     export VERSION=$(cat .version) &&
+                     sed -i "s/^version\\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml'''
+assemble = """#!/usr/bin/env bash
+              set -ue
+              mkdir -p build &&
+              poetry export --without-hashes --format requirements.txt --output build/requirements.txt &&
+              SAM_CLI_TELEMETRY=0 sam build ${SAM_USE_CONTAINER:=""} --template-file resources/aws-sam-cli/template.yaml --manifest build/requirements.txt --region eu-west-2"""
+cut_release = """#!/usr/bin/env bash
+                 set -ue
+                 cut-release"""
+publish_s3 = """#!/usr/bin/env bash
+                set -ue
+                if [ ! -f ".version" ]; then
+                    echo "No version set, cannot publish. Please run prepare_release task."
+                    exit 1
+                fi
+
+                # Unfortunately Poetry won't allow
+                # us to add awscli to the --dev dependencies due to transitive
+                # dependency conflicts with aws-sam-cli. Until the conflicts are
+                # resolved we have to use pip to install awscli.
+                pip install awscli
+
+                SAM_CLI_TELEMETRY=0 sam package ${SAM_USE_CONTAINER:=""} --region eu-west-2 \\
+                    --s3-bucket mdtp-lambda-functions-${MDTP_ENVIRONMENT} \\
+                    --s3-prefix aws-lambda-ecs-riemann-reload \\
+                    --output-template-file=$(pwd)/build/ecs-riemann-reload-cf-template.yaml"""
+publish = """task assemble &&
+             task publish_s3 &&
+             task rename_s3_file &&
+             task publish_checksum_file"""
+rename_s3_file = """#!/usr/bin/env bash
+                    set -ue
+                    if [ ! -f ".version" ]; then
+                        echo "No version set, cannot publish. Please run prepare_release task."
+                        exit 1
+                    fi
+                    export VERSION=$(cat .version)
+                    export S3_BUCKET=$(grep S3Bucket build/ecs-riemann-reload-cf-template.yaml \\
+                        | cut -d : -f 2  \\
+                        | sed 's/\\s*//g') &&
+                    export S3_KEY_FOLDER=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
+                        | cut -d : -f 2  \\
+                        | cut -d / -f 1 | sed 's/\\s*//g') &&
+                    export S3_KEY_FILENAME=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
+                        | cut -d : -f 2  \\
+                        | cut -d / -f 2 | sed 's/\\s*//g') &&
+                    aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \\
+                              s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \\
+                              --acl=bucket-owner-full-control"""
+publish_checksum_file = """#!/usr/bin/env bash
+                            set -ue
+                            if [ ! -f ".version" ]; then
+                                echo "No version set, cannot publish. Please run prepare_release task."
+                                exit 1
+                            fi
+                            export VERSION=$(cat .version)
+                            export S3_BUCKET=$(grep S3Bucket build/ecs-riemann-reload-cf-template.yaml \\
+                                | cut -d : -f 2  \\
+                                | sed 's/\\s*//g') &&
+                            export S3_KEY_FOLDER=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
+                                | cut -d : -f 2  \\
+                                | cut -d / -f 1 | sed 's/\\s*//g') &&
+                            export FILE_NAME="aws-lambda-ecs-riemann-reload.${VERSION}.zip" &&
+                            export HASH_FILE_NAME="${FILE_NAME}.base64sha256" &&
+                            aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${FILE_NAME} build/${FILE_NAME} &&
+                            echo -n "build/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 > build/${HASH_FILE_NAME} &&
+                            aws s3 cp --content-type text/plain build/${HASH_FILE_NAME} s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${HASH_FILE_NAME} --acl=bucket-owner-full-control"""
+schema = """PYTHONPATH='src' pytest tests/test_validate_settings_files.py"""
+verify = """task test &&
+            task black_check &&
+            task safety &&
+            task bandit"""
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

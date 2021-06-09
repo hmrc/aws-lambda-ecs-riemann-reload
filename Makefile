@@ -45,10 +45,10 @@ reset: ## Teardown tooling
 	rm $(POETRY_PATH) -r
 .PHONY: reset
 
-setup: check_poetry ## Setup virtualenv & dependencies using poetry
+setup: check_poetry ## Setup virtualenv & dependencies using poetry and set-up the git hook scripts
 	@export POETRY_VIRTUALENVS_IN_PROJECT=$(POETRY_VIRTUALENVS_IN_PROJECT) && poetry run pip install --upgrade pip
 	@poetry install --no-root
-.PHONY: setup
+	@poetry run pre-commit install
 
 bandit: setup ## Run bandit against python code
 	@poetry run task bandit
@@ -58,6 +58,10 @@ black: setup ## Run black against python code
 	@poetry run task black_reformat
 .PHONY: black
 
+cut_release: ## Cut release
+	@poetry run task cut_release
+.PHONY: cut_release
+
 safety: setup ## Run Safety
 	@poetry run task safety
 .PHONY: safety
@@ -66,14 +70,25 @@ test: setup ## Run functional and unit tests
 	@poetry run task test
 .PHONY: test
 
-package: setup ## Run a SAM build
+package: ## Run a SAM build
 	@poetry run task assemble
 .PHONY: package
 
-publish: setup ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment )
+prepare_release: ## Runs prepare release
+	@poetry run task prepare_release
+.PHONY: prepare_release
+
+publish: ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment )
 	@poetry run task publish
 .PHONY: publish
 
-unittest: ## Run unit tests
+unittest: setup ## Run unit tests
 	@poetry run task unittest
 .PHONY: unittest
+
+verify: ## Run task verify
+	@poetry run task verify
+.PHONY: verify
+
+verify_package_and_publish: setup verify prepare_release package publish cut_release
+.PHONY: verify_package_and_publish

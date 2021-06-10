@@ -1,4 +1,8 @@
 version: 0.2
+env:
+  variables:
+    MDTP_ENVIRONMENT: "internal-base"
+    SAM_USE_CONTAINER: ""
 phases:
   install:
     runtime-versions:
@@ -18,4 +22,8 @@ phases:
       - 'poetry install'
   build:
     commands:
-      - 'echo Hello Build'
+      - make verify
+      - make prepare_release
+      - make package
+      - make publish
+      - make cut_release

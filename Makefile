@@ -58,6 +58,10 @@ black: setup ## Run black against python code
 	@poetry run task black_reformat
 .PHONY: black
 
+cut_release: setup ## Cut release
+	@poetry run task cut_release
+.PHONY: cut_release
+
 safety: setup ## Run Safety
 	@poetry run task safety
 .PHONY: safety
@@ -70,6 +74,10 @@ package: setup ## Run a SAM build
 	@poetry run task assemble
 .PHONY: package
 
+prepare_release: setup ## Runs prepare release
+	@poetry run task prepare_release
+.PHONY: prepare_release
+
 publish: setup ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment )
 	@poetry run task publish
 .PHONY: publish
@@ -77,3 +85,7 @@ publish: setup ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to 
 unittest: ## Run unit tests
 	@poetry run task unittest
 .PHONY: unittest
+
+verify: ## Run task verify
+	@poetry run task verify
+.PHONY: verify

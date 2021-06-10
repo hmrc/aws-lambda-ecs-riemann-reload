@@ -4,12 +4,11 @@ phases:
     runtime-versions:
       python: 3.8
     commands:
-      - curl -v https://artefacts.tax.service.gov.uk
       - cd $(pyenv root)
       - git stash
       - git pull
       - cd -
-      - pyenv install $(cat .python-version)
+      - pyenv install -s $(cat .python-version)
   pre_build:
     commands:
       - pyenv global $(cat .python-version)

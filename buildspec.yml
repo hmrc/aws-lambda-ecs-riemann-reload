@@ -3,8 +3,16 @@ phases:
   install:
     runtime-versions:
       python: 3.8
+    commands:
+      - curl -v https://artefacts.tax.service.gov.uk
+      - cd $(pyenv root)
+      - git stash
+      - git pull
+      - cd -
+      - pyenv install $(cat .python-version)
   pre_build:
     commands:
+      - pyenv global $(cat .python-version)
       - 'curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -'
       - 'export PATH=$PATH:$HOME/.poetry/bin'
       - 'poetry config virtualenvs.create false'

@@ -44,7 +44,9 @@ black_check = "black --check --diff ./src ./tests"
 black_reformat = "black ./src ./tests"
 safety = "safety check"
 bandit = "bandit -r ./src"
-prepare_release = '''prepare-release &&
+prepare_release = '''echo ----------- hello ---------- &&
+                     prepare-release &&
+                     echo bye
                      export VERSION=$(cat .version) &&
                      echo ${VERSION} &&
                      sed -i "s/^version\\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml'''

@@ -15,6 +15,7 @@ phases:
       - pyenv install -s $(cat .python-version)
   pre_build:
     commands:
+      - echo ${GIT_BRANCH}
       - 'pip install --upgrade pip'
       - pyenv global $(cat .python-version)
       - 'curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -'

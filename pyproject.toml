@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aws-lambda-ecs-riemann-reload"
-version = "0.1.0"
+version = "0.0.4"
 description = "An AWS Lambda that will re-deploy the Riemann consumer or producer services running in ECS, when triggered by an SNS notification"
 authors = ["Vítor Brandão <109226+vitorbrandao@users.noreply.github.com>"]
 maintainers = ["Team Telemetry"]
@@ -46,6 +46,7 @@ safety = "safety check"
 bandit = "bandit -r ./src"
 prepare_release = '''prepare-release &&
                      export VERSION=$(cat .version) &&
+                     echo ${VERSION} &&
                      sed -i "s/^version\\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml'''
 assemble = """#!/usr/bin/env bash
               set -ue

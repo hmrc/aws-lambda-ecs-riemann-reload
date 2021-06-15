@@ -60,7 +60,7 @@ cut_release = """#!/usr/bin/env bash
                  set -ue
                  cut-release"""
 publish_s3 = """#!/usr/bin/env bash
-                set -ue
+                set -uex
                 if [ ! -f ".version" ]; then
                     echo "No version set, cannot publish. Please run prepare_release task."
                     exit 1

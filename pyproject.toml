@@ -76,9 +76,13 @@ publish_s3 = """#!/usr/bin/env bash
                     --s3-bucket mdtp-lambda-functions-${MDTP_ENVIRONMENT} \\
                     --s3-prefix aws-lambda-ecs-riemann-reload \\
                     --output-template-file=$(pwd)/build/ecs-riemann-reload-cf-template.yaml"""
-publish = """task assemble &&
+publish = """echo start assemble &&
+             task assemble &&
+             echo start publish s3 &&
              task publish_s3 &&
+             echo start rename_s3_file &&
              task rename_s3_file &&
+             echo start publish_checksum_file &&
              task publish_checksum_file"""
 rename_s3_file = """#!/usr/bin/env bash
                     set -ue
@@ -96,9 +100,10 @@ rename_s3_file = """#!/usr/bin/env bash
                     export S3_KEY_FILENAME=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
                         | cut -d : -f 2  \\
                         | cut -d / -f 2 | sed 's/\\s*//g') &&
+                    echo s3 bucket: ${S3_BUCKET}, s3 key folder: ${S3_KEY_FOLDER}, &&
                     aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \\
                               s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \\
-                              --acl=bucket-owner-full-control"""
+                              --acl=bucket-owner-full-control """
 publish_checksum_file = """#!/usr/bin/env bash
                             set -ue
                             if [ ! -f ".version" ]; then
@@ -126,4 +131,3 @@ verify = """task test &&
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-

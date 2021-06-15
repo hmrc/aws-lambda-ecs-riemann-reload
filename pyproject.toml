@@ -83,7 +83,7 @@ publish = """echo start assemble &&
              echo start publish_checksum_file &&
              task publish_checksum_file"""
 rename_s3_file = """#!/usr/bin/env bash
-                    set -ue
+                    set -uex
                     if [ ! -f ".version" ]; then
                         echo "No version set, cannot publish. Please run prepare_release task."
                         exit 1
@@ -98,7 +98,6 @@ rename_s3_file = """#!/usr/bin/env bash
                     export S3_KEY_FILENAME=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml \\
                         | cut -d : -f 2  \\
                         | cut -d / -f 2 | sed 's/\\s*//g') &&
-                    echo s3 bucket: ${S3_BUCKET}, s3 key folder: ${S3_KEY_FOLDER}, &&
                     aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \\
                               s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \\
                               --acl=bucket-owner-full-control """

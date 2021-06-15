@@ -45,9 +45,7 @@ black_check = "black --check --diff ./src ./tests"
 black_reformat = "black ./src ./tests"
 safety = "safety check"
 bandit = "bandit -r ./src"
-prepare_release = '''echo ----------- hello ---------- &&
-                     prepare-release &&
-                     echo bye
+prepare_release = '''prepare-release &&
                      export VERSION=$(cat .version) &&
                      echo ${VERSION} &&
                      sed -i "s/^version\\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml'''
@@ -73,8 +71,8 @@ publish_s3 = """#!/usr/bin/env bash
                 pip install awscli
 
                 SAM_CLI_TELEMETRY=0 sam package ${SAM_USE_CONTAINER:=""} --region eu-west-2 \\
-                    --s3-bucket mdtp-lambda-functions-${MDTP_ENVIRONMENT} \\
-                    --s3-prefix aws-lambda-ecs-riemann-reload \\
+                    --s3-bucket telemetry-lambda-artifacts-internal-base \\
+                    --s3-prefix build-aws-lambda-ecs-riemann-reload \\
                     --output-template-file=$(pwd)/build/ecs-riemann-reload-cf-template.yaml"""
 publish = """echo start assemble &&
              task assemble &&

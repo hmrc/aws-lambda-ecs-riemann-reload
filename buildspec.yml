@@ -3,6 +3,9 @@ env:
   variables:
     MDTP_ENVIRONMENT: "internal-base"
     SAM_USE_CONTAINER: ""
+  parameter-store:
+    GITHUB_TOKEN: telemetry_github_token
+    GITHUB_USER: telemetry_github_user
 phases:
   install:
     runtime-versions:

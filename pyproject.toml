@@ -81,7 +81,8 @@ publish = """echo start assemble &&
              echo start rename_s3_file &&
              task rename_s3_file &&
              echo start publish_checksum_file &&
-             task publish_checksum_file"""
+             task publish_checksum_file &&
+             echo Finished"""
 rename_s3_file = """#!/usr/bin/env bash
                     set -uex
                     if [ ! -f ".version" ]; then
@@ -100,7 +101,7 @@ rename_s3_file = """#!/usr/bin/env bash
                         | cut -d / -f 2 | sed 's/\\s*//g') &&
                     aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \\
                               s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \\
-                              --content-type text/plain --acl=bucket-owner-full-control --debug"""
+                              --content-type text/plain --acl=bucket-owner-full-control"""
 publish_checksum_file = """#!/usr/bin/env bash
                             set -ue
                             if [ ! -f ".version" ]; then

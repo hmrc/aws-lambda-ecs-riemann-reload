@@ -100,7 +100,7 @@ rename_s3_file = """#!/usr/bin/env bash
                         | cut -d / -f 2 | sed 's/\\s*//g') &&
                     aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \\
                               s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \\
-                              --acl=bucket-owner-full-control """
+                              --acl=bucket-owner-full-control --debug"""
 publish_checksum_file = """#!/usr/bin/env bash
                             set -ue
                             if [ ! -f ".version" ]; then

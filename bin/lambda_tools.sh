@@ -14,8 +14,6 @@ BUILD_NAME="build-lambda-trigger-codebuild"
 FUNCTION_NAME="trigger-codebuild"
 BUILD_TERRAFORM_NAME="build-telemetry-internal-base-terraform"
 ARTIFACTS_NAME="trigger_codebuild"
-HANDLER_FILE="handler.py"
-SRC_FOLDER="src"
 
 PROJECT_NAME="ecs-riemann-reload"
 
@@ -23,10 +21,9 @@ ARTIFACTS_ZIP_FILE="${ARTIFACTS_NAME}.zip"
 ARTIFACTS_HASH_FILE="${ARTIFACTS_NAME}.zip.base64sha256"
 
 PATH_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PATH_SRC="${PATH_ROOT}/${SRC_FOLDER}"
-PATH_HANDLER="${PATH_SRC}/${HANDLER_FILE}"
 PATH_BUILD="${PATH_ROOT}/build"
 PATH_CF_TEMPLATE="${PATH_BUILD}/${PROJECT_NAME}-cf-template.yaml"
+PATH_SAM_RESOURCES="${PATH_ROOT}/resources/aws-sam-cli/"
 
 S3_TELEMETRY_LAMBDA_ROOT="telemetry-lambda-artifacts-internal-base"
 S3_LAMBDA_SUB_FOLDER="build-aws-lambda-ecs-riemann-reload"
@@ -35,148 +32,139 @@ S3_ADDRESS="s3://${S3_TELEMETRY_LAMBDA_ROOT}/${S3_LAMBDA_SUB_FOLDER}"
 ## End of the configurations ########################################
 #####################################################################
 
-main() {
-  # Validate command arguments
-  [ "$#" -ne 1 ] && help && exit 1
-  function="$1"
-  functions="help invoke_test codebuild codebuild_lambda codebuild_master assemble publish_s3 rename_s3_file publish check_version publish_checksum_file prepare_release"
-  [[ $functions =~ (^|[[:space:]])"$function"($|[[:space:]]) ]] || (echo -e "\n\"$function\" is not a valid command. Try \"$0 help\" for more details" && exit 2)
-
-  $function
-}
-
+# Prepare dependencies and build the Lambda function code using SAM
 assemble() {
   print_begins
 
   mkdir -p ${PATH_BUILD}
   poetry export --without-hashes --format requirements.txt --output ${PATH_BUILD}/requirements.txt
-  SAM_CLI_TELEMETRY=0 poetry run sam build ${SAM_USE_CONTAINER:=""} --template-file resources/aws-sam-cli/template.yaml --manifest ${PATH_BUILD}/requirements.txt --region eu-west-2
+  SAM_CLI_TELEMETRY=0 poetry run sam build ${SAM_USE_CONTAINER:=""} --template-file ${PATH_SAM_RESOURCES}/template.yaml --manifest ${PATH_BUILD}/requirements.txt --region eu-west-2
 
   print_completed
 }
 
+# Bump the function's version when appropriate
 prepare_release() {
   print_begins
 
   poetry run prepare-release
-  check_version
-  export VERSION=$(cat .version)
-  echo ${VERSION}
+  export_version
   sed -i "s/^version\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml
 
   print_completed
 }
 
+# Take all the necessary steps to build and publish both lambda function's zip and checksum files
 publish() {
   print_begins
 
   assemble
-  publish_s3
-  rename_s3_file
+  publish_artifacts_to_s3
+  rename_artifacts_in_s3
   publish_checksum_file
 
   print_completed
 }
 
-publish_checksum_file() {
+# Package and upload artifacts to S3 using poetry installed SAM
+publish_artifacts_to_s3() {
   print_begins
 
-  check_version
-  export VERSION=$(cat .version)
-  export S3_BUCKET=$(grep S3Bucket ${PATH_CF_TEMPLATE} |
-    cut -d : -f 2 |
-    sed 's/\s*//g')
-  export S3_KEY_FOLDER=$(grep S3Key ${PATH_CF_TEMPLATE} |
-    cut -d : -f 2 |
-    cut -d / -f 1 | sed 's/\s*//g')
-  export FILE_NAME="aws-lambda-${PROJECT_NAME}.${VERSION}.zip"
-  export HASH_FILE_NAME="${FILE_NAME}.base64sha256.txt"
-  aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${FILE_NAME} ${PATH_BUILD}/${FILE_NAME}
-  echo -n "${PATH_BUILD}/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 >${PATH_BUILD}/${HASH_FILE_NAME}
-  aws s3 cp --content-type text/plain ${PATH_BUILD}/${HASH_FILE_NAME} s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${HASH_FILE_NAME} --acl=bucket-owner-full-control
-
-  print_completed
-}
-
-publish_s3() {
-  print_begins
-
-  check_version
+  export_version
 
   # Unfortunately Poetry won't allow
   # us to add awscli to the --dev dependencies due to transitive
   # dependency conflicts with aws-sam-cli. Until the conflicts are
   # resolved we have to use pip to install awscli.
-  pip install awscli
+
+  # Commenting this as I dont see why it is needed here also I expect awscli be installed in the codebuild instance
+  # pip install awscli
 
   SAM_CLI_TELEMETRY=0 poetry run sam package ${SAM_USE_CONTAINER:=""} --region eu-west-2 \
     --s3-bucket ${S3_TELEMETRY_LAMBDA_ROOT} \
-    --s3-prefix ${S3_LAMBDA_SUB_FOLDER3} \
+    --s3-prefix ${S3_LAMBDA_SUB_FOLDER} \
     --output-template-file=${PATH_CF_TEMPLATE}
 
-    print_completed
+  print_completed
 }
 
-rename_s3_file() {
+# Download the artifacts zip file and generate its checksum file to be stored alongside it
+publish_checksum_file() {
   print_begins
 
-  check_version
-  export VERSION=$(cat .version)
-  export S3_BUCKET=$(grep S3Bucket ${PATH_CF_TEMPLATE} |
-    cut -d : -f 2 |
-    sed 's/\s*//g')
-  export S3_KEY_FOLDER=$(grep S3Key ${PATH_CF_TEMPLATE} |
-    cut -d : -f 2 |
-    cut -d / -f 1 | sed 's/\s*//g')
-  export S3_KEY_FILENAME=$(grep S3Key ${PATH_CF_TEMPLATE} |
-    cut -d : -f 2 |
-    cut -d / -f 2 | sed 's/\s*//g')
-  aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \
-    s3://${S3_BUCKET}/${S3_KEY_FOLDER}/aws-lambda-ecs-riemann-reload.${VERSION}.zip \
+  export_version
+  export FILE_NAME="aws-lambda-${PROJECT_NAME}.${VERSION}.zip"
+  export HASH_FILE_NAME="${FILE_NAME}.base64sha256.txt"
+  aws s3 cp ${S3_ADDRESS}/${FILE_NAME} ${PATH_BUILD}/${FILE_NAME}
+  echo -n "${PATH_BUILD}/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 >${PATH_BUILD}/${HASH_FILE_NAME}
+  aws s3 cp ${PATH_BUILD}/${HASH_FILE_NAME} ${S3_ADDRESS}/${HASH_FILE_NAME} \
     --content-type text/plain --acl=bucket-owner-full-control
 
-    print_completed
+  print_completed
+}
+
+# Rename SAM generated package to the expected format by terraform,
+#   to be picked up during provisioning of the AWS "Lambda function" resource
+rename_artifacts_in_s3() {
+  print_begins
+
+  export_version
+  export S3_KEY_FILENAME=$(grep S3Key ${PATH_CF_TEMPLATE} | cut -d : -f 2 | cut -d / -f 2 | sed 's/\s*//g')
+
+  aws s3 mv ${S3_ADDRESS}/${S3_KEY_FILENAME} ${S3_ADDRESS}/aws-lambda-${PROJECT_NAME}.${VERSION}.zip \
+    --acl=bucket-owner-full-control
+
+  print_completed
 }
 
 #####################################################################
 ## Beginning of the helper methods ##################################
 
-print_begins() {
-  echo -e "\n#################################################"
-  echo -e "## ${FUNCNAME[ 1 ]} begins\n"
-}
-
-check_version() {
+export_version() {
 
   if [ ! -f ".version" ]; then
-    echo "No version set, cannot publish. Please run prepare_release task."
+    echo ".version file not fount! Have you run prepare_release command?"
     exit 1
   fi
 
-}
+  export VERSION=$(cat .version)
 
-print_completed() {
-  echo -e "\n## ${FUNCNAME[ 1 ]} completed!"
-  echo -e "#################################################\n"
 }
 
 help() {
   echo "$0 Provides set of commands to assist you with day-to-day tasks when working in this project"
   echo
   echo "Available commands:"
-  echo -e " - assemble\t\tUse SAM to build your Lambda function code"
-  echo -e " - codebuild\t\tTrigger the AWS CodeBuild '${BUILD_NAME}' from the current branch in internal-base"
-  echo -e " - codebuild_lambda\tTrigger the AWS CodeBuild '${BUILD_TERRAFORM_NAME}' in internal-base.\n\t\t\t (this only targets the '${FUNCTION_NAME}' lambda function)"
-  echo -e " - codebuild_master\tTrigger the AWS CodeBuild '${BUILD_NAME}' in internal-base"
-  echo -e " - invoke_test\t\tInvoke ${FUNCTION_NAME} function"
-  echo -e " - publish\t\tPackage and share artifacts by running assemble, publish_s3, rename_s3_file, publish_checksum_file"
-  echo -e " - publish_s3\t\tUses SAM to Package an AWS SAM application and upload to an S3 bucket"
-  echo -e " - push\t\t\tUpload the produced artifacts by the package command to ${S3_ADDRESS}"
-  echo -e " - rename_s3_file\t\t\tDuplicate artifact generated by SAM to a suitable file name"
+  echo -e " - assemble\t\t\t Prepare dependencies and build the Lambda function code using SAM"
+  echo -e " - prepare_release\t\t Bump the function's version when appropriate"
+  echo -e " - publish\t\t\t Package and share artifacts by running assemble, publish_artifacts_to_s3, rename_artifacts_in_s3 and publish_checksum_file commands"
+  echo -e " - publish_artifacts_to_s3\t Uses SAM to Package and upload artifacts to ${S3_ADDRESS}"
+  echo -e " - publish_checksum_file\t Generate a checksum for the artifacts zip file and store in the same S3 location (${S3_LAMBDA_SUB_FOLDER})"
+  echo -e " - rename_artifacts_in_s3\t Rename the artifact published by SAM to ${S3_ADDRESS} to expected, versioned file name"
   echo
+}
+
+print_begins() {
+  echo -e "\n-------------------------------------------------"
+  echo -e ">>> ${FUNCNAME[1]} Begins\n"
+}
+
+print_completed() {
+  echo -e "\n### ${FUNCNAME[1]} Completed!"
+  echo -e "-------------------------------------------------"
 }
 
 ## End of the helper methods ########################################
 #####################################################################
+
+main() {
+  # Validate command arguments
+  [ "$#" -ne 1 ] && help && exit 1
+  function="$1"
+  functions="help invoke_test codebuild codebuild_lambda codebuild_master assemble publish_s3 rename_s3_file publish publish_checksum_file prepare_release"
+  [[ $functions =~ (^|[[:space:]])"$function"($|[[:space:]]) ]] || (echo -e "\n\"$function\" is not a valid command. Try \"$0 help\" for more details" && exit 2)
+
+  $function
+}
 
 main "$@"

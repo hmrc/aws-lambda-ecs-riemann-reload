@@ -35,34 +35,20 @@ unittest = "PYTHONPATH='src' pytest tests/unit --cov=src"
 start_lambda = "./bin/start-lambda.sh"
 stop_lambda = "./bin/stop-lambda.sh"
 pre_functest = "task assemble && task start_lambda"
-functest = """#!/usr/bin/env bash
-              set -ue
-              PYTHONPATH='.' poetry run pytest tests/functional"""
 post_functest = "task stop_lambda"
-test = """#!/usr/bin/env bash
-          set -e
-          task unittest"""
+test = "task unittest"
 black_check = "black --check --diff ./src ./tests"
 black_reformat = "black ./src ./tests"
 safety = "safety check"
 bandit = "bandit -r ./src"
-prepare_release = '''prepare-release &&
-                     export VERSION=$(cat .version) &&
-                     echo ${VERSION} &&
-                     sed -i "s/^version\\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml'''
+prepare_release = "./bin/lambda_tools.sh prepare_release"
 assemble = "./bin/lambda_tools.sh assemble"
-cut_release = """#!/usr/bin/env bash
-                 set -ue
-                 cut-release"""
+cut_release = "cut-release"
 publish_s3 = "./bin/lambda_tools.sh publish_s3"
 publish = "./bin/lambda_tools.sh publish"
 rename_s3_file = "./bin/lambda_tools.sh rename_s3_file"
 publish_checksum_file = "./bin/lambda_tools.sh publish_checksum_file"
-schema = """PYTHONPATH='src' pytest tests/test_validate_settings_files.py"""
-verify = """task test &&
-            task black_check &&
-            task safety &&
-            task bandit"""
+verify = "task test && task black_check && task safety && task bandit"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

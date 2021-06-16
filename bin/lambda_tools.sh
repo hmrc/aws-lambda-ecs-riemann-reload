@@ -17,21 +17,19 @@ ARTIFACTS_NAME="trigger_codebuild"
 HANDLER_FILE="handler.py"
 SRC_FOLDER="src"
 
+PROJECT_NAME="ecs-riemann-reload"
+
 ARTIFACTS_ZIP_FILE="${ARTIFACTS_NAME}.zip"
 ARTIFACTS_HASH_FILE="${ARTIFACTS_NAME}.zip.base64sha256"
 
 PATH_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PATH_SRC="${PATH_ROOT}/${SRC_FOLDER}"
 PATH_HANDLER="${PATH_SRC}/${HANDLER_FILE}"
-PATH_BUILD="build"
-PATH_ARTIFACTS="${PATH_BUILD}/artifacts"
-PATH_DEPENDENCIES="${PATH_BUILD}/dependencies"
-
-PATH_ARTIFACTS_ZIP_FILE="${PATH_ARTIFACTS}/${ARTIFACTS_ZIP_FILE}"
-PATH_ARTIFACTS_HASH_FILE="${PATH_ARTIFACTS}/${ARTIFACTS_HASH_FILE}"
+PATH_BUILD="${PATH_ROOT}/build"
+PATH_CF_TEMPLATE="${PATH_BUILD}/${PROJECT_NAME}-cf-template.yaml"
 
 S3_TELEMETRY_LAMBDA_ROOT="telemetry-lambda-artifacts-internal-base"
-S3_LAMBDA_SUB_FOLDER="build-trigger-codebuild"
+S3_LAMBDA_SUB_FOLDER="build-aws-lambda-ecs-riemann-reload"
 S3_ADDRESS="s3://${S3_TELEMETRY_LAMBDA_ROOT}/${S3_LAMBDA_SUB_FOLDER}"
 
 ## End of the configurations ########################################
@@ -85,17 +83,17 @@ publish_checksum_file() {
 
   check_version
   export VERSION=$(cat .version)
-  export S3_BUCKET=$(grep S3Bucket build/ecs-riemann-reload-cf-template.yaml |
+  export S3_BUCKET=$(grep S3Bucket ${PATH_CF_TEMPLATE} |
     cut -d : -f 2 |
     sed 's/\s*//g')
-  export S3_KEY_FOLDER=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml |
+  export S3_KEY_FOLDER=$(grep S3Key ${PATH_CF_TEMPLATE} |
     cut -d : -f 2 |
     cut -d / -f 1 | sed 's/\s*//g')
-  export FILE_NAME="aws-lambda-ecs-riemann-reload.${VERSION}.zip"
+  export FILE_NAME="aws-lambda-${PROJECT_NAME}.${VERSION}.zip"
   export HASH_FILE_NAME="${FILE_NAME}.base64sha256.txt"
-  aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${FILE_NAME} build/${FILE_NAME}
-  echo -n "build/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 >build/${HASH_FILE_NAME}
-  aws s3 cp --content-type text/plain build/${HASH_FILE_NAME} s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${HASH_FILE_NAME} --acl=bucket-owner-full-control
+  aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${FILE_NAME} ${PATH_BUILD}/${FILE_NAME}
+  echo -n "${PATH_BUILD}/${FILE_NAME}" | openssl dgst -binary -sha1 | openssl base64 >${PATH_BUILD}/${HASH_FILE_NAME}
+  aws s3 cp --content-type text/plain ${PATH_BUILD}/${HASH_FILE_NAME} s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${HASH_FILE_NAME} --acl=bucket-owner-full-control
 
   print_completed
 }
@@ -112,9 +110,9 @@ publish_s3() {
   pip install awscli
 
   SAM_CLI_TELEMETRY=0 poetry run sam package ${SAM_USE_CONTAINER:=""} --region eu-west-2 \
-    --s3-bucket telemetry-lambda-artifacts-internal-base \
-    --s3-prefix build-aws-lambda-ecs-riemann-reload \
-    --output-template-file=$(pwd)/build/ecs-riemann-reload-cf-template.yaml
+    --s3-bucket ${S3_TELEMETRY_LAMBDA_ROOT} \
+    --s3-prefix ${S3_LAMBDA_SUB_FOLDER3} \
+    --output-template-file=${PATH_CF_TEMPLATE}
 
     print_completed
 }
@@ -124,13 +122,13 @@ rename_s3_file() {
 
   check_version
   export VERSION=$(cat .version)
-  export S3_BUCKET=$(grep S3Bucket build/ecs-riemann-reload-cf-template.yaml |
+  export S3_BUCKET=$(grep S3Bucket ${PATH_CF_TEMPLATE} |
     cut -d : -f 2 |
     sed 's/\s*//g')
-  export S3_KEY_FOLDER=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml |
+  export S3_KEY_FOLDER=$(grep S3Key ${PATH_CF_TEMPLATE} |
     cut -d : -f 2 |
     cut -d / -f 1 | sed 's/\s*//g')
-  export S3_KEY_FILENAME=$(grep S3Key build/ecs-riemann-reload-cf-template.yaml |
+  export S3_KEY_FILENAME=$(grep S3Key ${PATH_CF_TEMPLATE} |
     cut -d : -f 2 |
     cut -d / -f 2 | sed 's/\s*//g')
   aws s3 cp s3://${S3_BUCKET}/${S3_KEY_FOLDER}/${S3_KEY_FILENAME} \

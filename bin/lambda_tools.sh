@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# A helper tool to assist us maintaining this lambda function
-# Intention here is to keep all the functions reusable for all Telemetry repositories,
-#   and keep the required changes between different repositories, limited to the configurations section bellow.
+# A helper tool to assist us maintaining lambda functions
+# Intention here is to keep this files and all its functions reusable for all Telemetry repositories
 
 set -o errexit
 set -o nounset
@@ -10,23 +9,18 @@ set -o nounset
 #####################################################################
 ## Beginning of the configurations ##################################
 
-BUILD_NAME="build-lambda-trigger-codebuild"
-FUNCTION_NAME="trigger-codebuild"
-BUILD_TERRAFORM_NAME="build-telemetry-internal-base-terraform"
-ARTIFACTS_NAME="trigger_codebuild"
+#PROJECT_NAME="ecs-riemann-reload"
 
-PROJECT_NAME="ecs-riemann-reload"
+BASE_LOCATION="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_FULL_NAME=$(basename $BASE_LOCATION)
+PROJECT_NAME=$(echo $PROJECT_FULL_NAME | sed 's/aws-lambda-//' )
 
-ARTIFACTS_ZIP_FILE="${ARTIFACTS_NAME}.zip"
-ARTIFACTS_HASH_FILE="${ARTIFACTS_NAME}.zip.base64sha256"
-
-PATH_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PATH_BUILD="${PATH_ROOT}/build"
+PATH_BUILD="${BASE_LOCATION}/build"
 PATH_CF_TEMPLATE="${PATH_BUILD}/${PROJECT_NAME}-cf-template.yaml"
-PATH_SAM_RESOURCES="${PATH_ROOT}/resources/aws-sam-cli/"
+PATH_SAM_RESOURCES="${BASE_LOCATION}/resources/aws-sam-cli/"
 
 S3_TELEMETRY_LAMBDA_ROOT="telemetry-lambda-artifacts-internal-base"
-S3_LAMBDA_SUB_FOLDER="build-aws-lambda-ecs-riemann-reload"
+S3_LAMBDA_SUB_FOLDER="build-${PROJECT_FULL_NAME}"
 S3_ADDRESS="s3://${S3_TELEMETRY_LAMBDA_ROOT}/${S3_LAMBDA_SUB_FOLDER}"
 
 ## End of the configurations ########################################
@@ -111,7 +105,8 @@ rename_artifacts_in_s3() {
   export_version
   export S3_KEY_FILENAME=$(grep S3Key ${PATH_CF_TEMPLATE} | cut -d : -f 2 | cut -d / -f 2 | sed 's/\s*//g')
 
-  aws s3 mv ${S3_ADDRESS}/${S3_KEY_FILENAME} ${S3_ADDRESS}/aws-lambda-${PROJECT_NAME}.${VERSION}.zip \
+  # Using mv instead of cp will require updating the codebuild's service-role to grant DeleteObject permission
+  aws s3 cp ${S3_ADDRESS}/${S3_KEY_FILENAME} ${S3_ADDRESS}/aws-lambda-${PROJECT_NAME}.${VERSION}.zip \
     --acl=bucket-owner-full-control
 
   print_completed
@@ -154,17 +149,35 @@ print_completed() {
   echo -e "-------------------------------------------------"
 }
 
+print_configs() {
+  echo -e "BASE_LOCATION:\t\t\t${BASE_LOCATION}"
+  echo -e "PROJECT_FULL_NAME:\t\t${PROJECT_FULL_NAME}"
+  echo -e "PROJECT_NAME:\t\t\t${PROJECT_NAME}"
+  echo
+  echo -e "PATH_BUILD:\t\t\t${PATH_BUILD}"
+  echo -e "PATH_CF_TEMPLATE:\t\t${PATH_CF_TEMPLATE}"
+  echo -e "PATH_SAM_RESOURCES:\t\t${PATH_SAM_RESOURCES}"
+  echo
+  echo -e "S3_TELEMETRY_LAMBDA_ROOT:\t${S3_TELEMETRY_LAMBDA_ROOT}"
+  echo -e "S3_LAMBDA_SUB_FOLDER:\t\t${S3_LAMBDA_SUB_FOLDER}"
+  echo -e "S3_ADDRESS:\t\t\t${S3_ADDRESS}"
+}
+
 ## End of the helper methods ########################################
 #####################################################################
 
+#####################################################################
+## Beginning of the Entry point #####################################
 main() {
   # Validate command arguments
   [ "$#" -ne 1 ] && help && exit 1
   function="$1"
-  functions="help invoke_test codebuild codebuild_lambda codebuild_master assemble publish_s3 rename_s3_file publish publish_checksum_file prepare_release"
+  functions="help assemble publish_s3 rename_s3_file publish publish_checksum_file prepare_release print_configs"
   [[ $functions =~ (^|[[:space:]])"$function"($|[[:space:]]) ]] || (echo -e "\n\"$function\" is not a valid command. Try \"$0 help\" for more details" && exit 2)
 
   $function
 }
 
 main "$@"
+## End of the Entry point ###########################################
+#####################################################################

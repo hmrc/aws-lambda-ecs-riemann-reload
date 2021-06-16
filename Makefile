@@ -45,9 +45,10 @@ reset: ## Teardown tooling
 	rm $(POETRY_PATH) -r
 .PHONY: reset
 
-setup: check_poetry ## Setup virtualenv & dependencies using poetry
+setup: check_poetry ## Setup virtualenv & dependencies using poetry and set-up the git hook scripts
 	@export POETRY_VIRTUALENVS_IN_PROJECT=$(POETRY_VIRTUALENVS_IN_PROJECT) && poetry run pip install --upgrade pip
 	@poetry install --no-root
+	@poetry run pre-commit install
 .PHONY: setup
 
 bandit: setup ## Run bandit against python code

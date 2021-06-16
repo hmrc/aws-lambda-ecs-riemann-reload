@@ -27,6 +27,7 @@ safety = "^1.10.3"
 taskipy = "^1.4.0"
 version-incrementor = "^0.9.0"
 colorama = "^0.4.4"
+pre-commit = "^2.13.0"
 
 [tool.taskipy.tasks]
 clean = "rm -fr ./build"

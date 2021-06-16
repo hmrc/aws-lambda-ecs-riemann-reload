@@ -18,7 +18,6 @@ phases:
       - pyenv install -s $(cat .python-version)
   pre_build:
     commands:
-      - echo branchis ${GIT_BRANCH}
       - 'pip install --upgrade pip'
       - pyenv global $(cat .python-version)
       - 'curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -'
@@ -27,7 +26,7 @@ phases:
       - 'poetry install'
   build:
     commands:
-      - export GIT_BRANCH=TEL-2473-buildspec-changes
+      - export GIT_BRANCH=${CODEBUILD_SOURCE_VERSION}
       - make verify
       - make prepare_release
       - make package

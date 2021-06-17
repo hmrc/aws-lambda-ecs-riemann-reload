@@ -13,7 +13,7 @@ set -o nounset
 
 BASE_LOCATION="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_FULL_NAME=$(basename $BASE_LOCATION)
-PROJECT_NAME=$(echo $PROJECT_FULL_NAME | sed 's/aws-lambda-//' )
+PROJECT_NAME=$(echo $PROJECT_FULL_NAME | sed 's/aws-lambda-//')
 
 PATH_BUILD="${BASE_LOCATION}/build"
 PATH_CF_TEMPLATE="${PATH_BUILD}/${PROJECT_NAME}-cf-template.yaml"
@@ -118,7 +118,7 @@ rename_artifacts_in_s3() {
 export_version() {
 
   if [ ! -f ".version" ]; then
-    echo ".version file not fount! Have you run prepare_release command?"
+    echo ".version file not found! Have you run prepare_release command?"
     exit 1
   fi
 

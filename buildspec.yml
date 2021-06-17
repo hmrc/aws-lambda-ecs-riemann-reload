@@ -27,8 +27,4 @@ phases:
   build:
     commands:
       - export GIT_BRANCH=${CODEBUILD_SOURCE_VERSION}
-      - make verify
-      - make prepare_release
-      - make package
-      - make publish
-      - make cut_release
+      - make verify_package_and_publish

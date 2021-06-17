@@ -106,7 +106,7 @@ rename_artifacts_in_s3() {
   export S3_KEY_FILENAME=$(grep S3Key ${PATH_CF_TEMPLATE} | cut -d : -f 2 | cut -d / -f 2 | sed 's/\s*//g')
 
   # Using mv instead of cp will require updating the codebuild's service-role to grant DeleteObject permission
-  aws s3 cp ${S3_ADDRESS}/${S3_KEY_FILENAME} ${S3_ADDRESS}/aws-lambda-${PROJECT_NAME}.${VERSION}.zip \
+  aws s3 mv ${S3_ADDRESS}/${S3_KEY_FILENAME} ${S3_ADDRESS}/aws-lambda-${PROJECT_NAME}.${VERSION}.zip \
     --acl=bucket-owner-full-control
 
   print_completed

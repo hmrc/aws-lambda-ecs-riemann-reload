@@ -52,8 +52,6 @@ prepare_release() {
 
   poetry run prepare-release
   export_version
-  poetry version patch
-  git commit --all --message="Bump patch version" --no-verify
 
   print_completed
 }

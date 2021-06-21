@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aws-lambda-ecs-riemann-reload"
-version = "0.0.9"
+version = "0.0.10"
 description = "An AWS Lambda that will re-deploy the Riemann consumer or producer services running in ECS, when triggered by an SNS notification"
 authors = ["Vítor Brandão <109226+vitorbrandao@users.noreply.github.com>"]
 maintainers = ["Team Telemetry"]

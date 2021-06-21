@@ -29,4 +29,4 @@ phases:
   build:
     commands:
       - export GIT_BRANCH=${CODEBUILD_SOURCE_VERSION}
-      - make verify_package_and_publish
+      - GIT_BRANCH=${CODEBUILD_SOURCE_VERSION} GITHUB_API_TOKEN=${GITHUB_API_TOKEN} GIT_API_USER=${GIT_API_USER} make verify_package_and_publish

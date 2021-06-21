@@ -5,7 +5,7 @@ env:
     SAM_USE_CONTAINER: ""
   parameter-store:
     GITHUB_API_TOKEN: telemetry_github_token
-    GIT_API_USER: telemetry_github_user
+    GITHUB_API_USER: telemetry_github_user
     GITHUB_TOKEN: telemetry_github_token
     GITHUB_USER: telemetry_github_user
 phases:
@@ -29,4 +29,4 @@ phases:
   build:
     commands:
       - export GIT_BRANCH=${CODEBUILD_SOURCE_VERSION}
-      - GIT_BRANCH=${CODEBUILD_SOURCE_VERSION} GITHUB_API_TOKEN=${GITHUB_API_TOKEN} GIT_API_USER=${GIT_API_USER} make verify_package_and_publish
+      - GIT_BRANCH=${CODEBUILD_SOURCE_VERSION} GITHUB_API_TOKEN=${GITHUB_API_TOKEN} GITHUB_API_USER=${GITHUB_API_USER} make verify_package_and_publish

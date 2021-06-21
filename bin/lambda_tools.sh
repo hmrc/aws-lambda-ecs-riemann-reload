@@ -37,6 +37,15 @@ assemble() {
   print_completed
 }
 
+cut_release() {
+  print_begins
+
+  echo "github user = ${GITHUB_API_USER}"
+  poetry run cut-release
+
+  print_completed
+}
+
 # Bump the function's version when appropriate
 prepare_release() {
   print_begins

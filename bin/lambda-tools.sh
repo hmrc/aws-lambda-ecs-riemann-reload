@@ -52,7 +52,8 @@ prepare_release() {
 
   poetry run prepare-release
   export_version
-  sed -i "s/^version\s*=.*$/version = \"${VERSION}\"/g" pyproject.toml
+  poetry version patch
+  git commit --all --message="Bump patch version"
 
   print_completed
 }

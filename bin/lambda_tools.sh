@@ -37,6 +37,7 @@ assemble() {
   print_completed
 }
 
+# Creates a release tag in the repository
 cut_release() {
   print_begins
 
@@ -145,6 +146,7 @@ help() {
   echo -e " - publish_artifacts_to_s3\t Uses SAM to Package and upload artifacts to ${S3_ADDRESS}"
   echo -e " - publish_checksum_file\t Generate a checksum for the artifacts zip file and store in the same S3 location (${S3_LAMBDA_SUB_FOLDER})"
   echo -e " - rename_artifacts_in_s3\t Rename the artifact published by SAM to ${S3_ADDRESS} to expected, versioned file name"
+  echo -e " - cut_release\t\t Creates a release tag in the repository"
   echo
 }
 
@@ -181,7 +183,7 @@ main() {
   # Validate command arguments
   [ "$#" -ne 1 ] && help && exit 1
   function="$1"
-  functions="help assemble publish_s3 rename_s3_file publish publish_checksum_file prepare_release print_configs"
+  functions="help assemble publish_s3 rename_s3_file publish publish_checksum_file prepare_release print_configs cut_release"
   [[ $functions =~ (^|[[:space:]])"$function"($|[[:space:]]) ]] || (echo -e "\n\"$function\" is not a valid command. Try \"$0 help\" for more details" && exit 2)
 
   $function

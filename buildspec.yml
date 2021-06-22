@@ -6,8 +6,6 @@ env:
   parameter-store:
     GITHUB_API_TOKEN: telemetry_github_token
     GITHUB_API_USER: telemetry_github_user
-    GITHUB_TOKEN: telemetry_github_token
-    GITHUB_USER: telemetry_github_user
 phases:
   install:
     runtime-versions:

@@ -3,9 +3,6 @@ env:
   variables:
     MDTP_ENVIRONMENT: "internal-base"
     SAM_USE_CONTAINER: ""
-  parameter-store:
-    GITHUB_API_TOKEN: telemetry_github_token
-    GITHUB_API_USER: telemetry_github_user
 phases:
   install:
     runtime-versions:
@@ -26,5 +23,4 @@ phases:
       - 'poetry install'
   build:
     commands:
-      - export GIT_BRANCH=${CODEBUILD_SOURCE_VERSION}
-      - GIT_BRANCH=${CODEBUILD_SOURCE_VERSION} GITHUB_API_TOKEN=${GITHUB_API_TOKEN} GITHUB_API_USER=${GITHUB_API_USER} make verify_package_and_publish
+      - make verify

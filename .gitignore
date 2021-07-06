@@ -26,6 +26,13 @@ node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+*.pyc
+__pychache*
+.coverage
+lambda-packages/
+venv/
+*.zip
+.vscode/
 .version
 .aws-sam/
 .pytest_cache/

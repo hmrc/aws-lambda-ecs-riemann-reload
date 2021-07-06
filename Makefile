@@ -42,7 +42,7 @@ check_python: ## Check Python installation
 .PHONY: check_python
 
 reset: ## Teardown tooling
-	rm $(POETRY_PATH) -r
+	rm -rfv $(POETRY_PATH)
 .PHONY: reset
 
 setup: check_poetry ## Setup virtualenv & dependencies using poetry and set-up the git hook scripts
@@ -78,7 +78,7 @@ prepare_release: ## Runs prepare release
 	@poetry run task prepare_release
 .PHONY: prepare_release
 
-publish: ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment )
+publish: ## Build and push lambda zip to S3 (requires MDTP_ENVIRONMENT to be set to an environment)
 	@poetry run task publish
 .PHONY: publish
 

@@ -9,8 +9,6 @@ set -o nounset
 #####################################################################
 ## Beginning of the configurations ##################################
 
-#PROJECT_NAME="ecs-riemann-reload"
-
 BASE_LOCATION="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROJECT_FULL_NAME=$(basename $BASE_LOCATION)
 PROJECT_NAME=$(echo $PROJECT_FULL_NAME | sed 's/aws-lambda-//')

@@ -27,6 +27,4 @@ phases:
   build:
     commands:
       - export GIT_BRANCH=${CODEBUILD_SOURCE_VERSION}
-      - env
-      - git status
       - GIT_BRANCH=${CODEBUILD_SOURCE_VERSION} GITHUB_API_TOKEN=${GITHUB_API_TOKEN} GITHUB_API_USER=${GITHUB_API_USER} make verify_package_and_publish

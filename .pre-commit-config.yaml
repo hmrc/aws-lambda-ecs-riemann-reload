@@ -20,7 +20,7 @@ repos:
       - id: end-of-file-fixer
         exclude: repository.yaml
   - repo: https://github.com/python/black
-    rev: 21.5b2
+    rev: 21.9b0
     hooks:
       - id: black
         name: Run Black

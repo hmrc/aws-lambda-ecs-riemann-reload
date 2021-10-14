@@ -7,7 +7,7 @@ repos:
         language: script
         pass_filenames: false
   - repo: git://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1 # Use the ref you want to point at
+    rev: v4.0.1
     hooks:
       - id: no-commit-to-branch
       - id: check-case-conflict
